@@ -1,0 +1,129 @@
+name: Sync Plugin Index
+
+on:
+  release:
+    types: [published, deleted, edited]
+
+jobs:
+  build-index:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+    steps:
+      - uses: actions/checkout@v4
+
+      - name: Build index.json from releases
+        run: |
+          cat << 'SCRIPT' > build_index.py
+          import json, os, re, sys
+
+          OWNER = os.environ["GITHUB_REPOSITORY"].split("/")[0]
+          REPO = os.environ["GITHUB_REPOSITORY"].split("/")[1]
+
+          # Fetch all releases via GitHub API
+          releases = json.loads(os.popen(
+              f"gh release list --repo $GITHUB_REPOSITORY --limit 1000 --json tagName,createdAt,name,body"
+          ).read())
+
+          index = {
+              "schema_version": 1,
+              "updated_at": "",
+              "plugins": {}
+          }
+
+          TAG_PATTERN = re.compile(r'^(.+)@v?(\d+\.\d+\.\d+.*)$')
+
+          for rel in releases:
+              match = TAG_PATTERN.match(rel["tagName"])
+              if not match:
+                  continue
+
+              plugin_id = match.group(1)
+              version = match.group(2)
+
+              if plugin_id not in index["plugins"]:
+                  index["plugins"][plugin_id] = {
+                      "id": plugin_id,
+                      "versions": {},
+                      "latest_version": version,
+                      "deprecated": False
+                  }
+
+              pkg = index["plugins"][plugin_id]
+
+              # Try to fetch manifest from release asset
+              manifest = {}
+              try:
+                  asset_info = os.popen(
+                      f"gh release view {rel['tagName']} --repo $GITHUB_REPOSITORY --json assets"
+                  ).read()
+                  assets = json.loads(asset_info).get("assets", [])
+                  for asset in assets:
+                      if asset["name"].endswith(".marcus-plugin"):
+                          # Download and extract manifest
+                          os.system(f"gh release download {rel['tagName']} --repo $GITHUB_REPOSITORY --pattern '{asset['name']}'")
+                          os.system(f"unzip -p {asset['name']} marcus-plugin.json > _manifest.json 2>/dev/null")
+                          if os.path.exists("_manifest.json"):
+                              with open("_manifest.json") as f:
+                                  manifest = json.load(f)
+                              os.remove("_manifest.json")
+                          os.remove(asset["name"])
+                          break
+              except:
+                  pass
+
+              pkg["versions"][version] = {
+                  "published_at": rel["createdAt"][:10],
+                  "download_url": (
+                      f"https://github.com/{OWNER}/{REPO}/releases/download/"
+                      f"{rel['tagName']}/{plugin_id}.marcus-plugin"
+                  ),
+                  "display_name": manifest.get("display_name", plugin_id),
+                  "description": manifest.get("description", ""),
+                  "categories": manifest.get("categories", []),
+                  "contribution": manifest.get("contribution", "terminal"),
+                  "min_marcus_version": manifest.get("min_marcus_version", "1.0.0")
+              }
+
+              # Check for deprecation markers in release body
+              body = rel.get("body", "") or ""
+              if "最终版本" in body or "[deprecated]" in body:
+                  pkg["deprecated"] = True
+                  pkg["deprecation_message"] = body[:200]
+
+              # Update latest_version (semver compare)
+              if version > pkg["latest_version"]:
+                  pkg["latest_version"] = version
+                  if not pkg.get("deprecated"):
+                      pkg["deprecated"] = False
+
+          # Sort versions within each plugin
+          for pid in index["plugins"]:
+              versions = index["plugins"][pid]["versions"]
+              index["plugins"][pid]["versions"] = dict(
+                  sorted(versions.items(), reverse=True)
+              )
+
+          index["updated_at"] = os.popen("date -u +%Y-%m-%dT%H:%M:%SZ").read().strip()
+
+          with open("index.json", "w") as f:
+              json.dump(index, f, indent=2, ensure_ascii=False)
+              f.write("\n")
+
+          print(f"Index updated: {len(index['plugins'])} plugins")
+          SCRIPT
+
+          pip install -q PyGithub 2>/dev/null || true
+          python build_index.py
+
+      - name: Commit and push
+        run: |
+          git config user.name "marcus-bot"
+          git config user.email "bot@marcus.local"
+          git add index.json
+          if git diff --cached --quiet; then
+            echo "No changes to index.json"
+          else
+            git commit -m "sync: update plugin index"
+            git push
+          fi

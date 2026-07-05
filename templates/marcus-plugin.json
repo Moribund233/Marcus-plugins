@@ -1,0 +1,48 @@
+{
+  "api_version": "1",
+  "id": "my-plugin",
+  "display_name": "My Plugin",
+  "description": "描述你的工具",
+  "icon": "icon.png",
+  "categories": ["utility"],
+  "version": "1.0.0",
+  "min_marcus_version": "1.0.0",
+  "contribution": "terminal",
+  "terminal": {
+    "command": "python",
+    "args": [
+      {
+        "name": "input",
+        "label": "输入",
+        "type": "string",
+        "default": ""
+      }
+    ]
+  },
+  "ui": {
+    "type": "form",
+    "inputs": [
+      {
+        "name": "input",
+        "label": "输入",
+        "type": "text",
+        "required": true,
+        "placeholder": "请输入..."
+      }
+    ],
+    "actions": [
+      {
+        "name": "run",
+        "label": "执行",
+        "style": "primary"
+      }
+    ],
+    "output": [
+      {
+        "name": "result",
+        "label": "结果",
+        "type": "text"
+      }
+    ]
+  }
+}

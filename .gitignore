@@ -1,0 +1,25 @@
+# Marcus plugin packages
+*.marcus-plugin
+_manifest.json
+
+# Dependencies
+**/node_modules/
+**/.venv/
+**/__pycache__/
+*.pyc
+*.pyo
+
+# Build output
+dist/*.whl
+dist/*.tgz
+dist/*.egg
+
+# OS
+.DS_Store
+Thumbs.db
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo

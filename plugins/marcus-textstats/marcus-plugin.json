@@ -1,0 +1,18 @@
+{
+  "api_version": "1",
+  "id": "marcus-textstats",
+  "display_name": "文本统计器",
+  "description": "统计文本文件的行数、词数、字符数",
+  "icon": "icon.png",
+  "categories": ["text", "utility"],
+  "version": "0.1.0",
+  "min_marcus_version": "1.0.0",
+  "contribution": "terminal",
+  "runtime": "python",
+  "terminal": {
+    "command": "marcus-textstats",
+    "args": [
+      { "name": "path", "label": "选择文件", "type": "file" }
+    ]
+  }
+}

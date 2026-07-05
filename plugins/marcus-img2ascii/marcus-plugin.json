@@ -1,0 +1,19 @@
+{
+  "api_version": "1",
+  "id": "marcus-img2ascii",
+  "display_name": "图片转ASCII",
+  "description": "将图片转换为 ASCII 字符图，支持自定义输出宽度",
+  "icon": "icon.png",
+  "categories": ["image", "utility"],
+  "version": "0.1.0",
+  "min_marcus_version": "1.0.0",
+  "contribution": "terminal",
+  "runtime": "bun",
+  "terminal": {
+    "command": "marcus-img2ascii",
+    "args": [
+      { "name": "path", "label": "选择图片", "type": "file" },
+      { "name": "width", "label": "输出宽度", "type": "number", "default": 80 }
+    ]
+  }
+}

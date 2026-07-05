@@ -1,0 +1,18 @@
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[project]
+name = "marcus-textstats"
+version = "0.1.0"
+description = "文本统计器 — 统计文件行数/词数/字符数"
+requires-python = ">=3.10"
+
+[project.scripts]
+marcus-textstats = "marcus_textstats.cli:main"
+
+[project.entry-points.marcus]
+textstats = "marcus_textstats:marcus"
+
+[tool.hatch.build.targets.wheel]
+packages = ["src/marcus_textstats"]

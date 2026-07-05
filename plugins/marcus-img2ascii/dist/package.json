@@ -1,0 +1,26 @@
+{
+  "name": "marcus-img2ascii",
+  "version": "0.1.0",
+  "description": "图片转 ASCII 字符图",
+  "type": "module",
+  "bin": {
+    "marcus-img2ascii": "./index.js"
+  },
+  "dependencies": {
+    "jimp": "^1.6.0"
+  },
+  "marcus": {
+    "display_name": "图片转ASCII",
+    "description": "将图片转换为 ASCII 字符图，支持自定义输出宽度",
+    "icon": "ImageDown",
+    "category": "image",
+    "contribution": "terminal",
+    "terminal": {
+      "command": "marcus-img2ascii",
+      "args": [
+        { "name": "path", "label": "选择图片", "type": "file" },
+        { "name": "width", "label": "输出宽度", "type": "number", "default": 80 }
+      ]
+    }
+  }
+}
