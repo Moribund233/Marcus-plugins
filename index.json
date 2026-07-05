@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-05T08:43:08Z",
+  "updated_at": "2026-07-05T15:31:55Z",
   "plugins": {
     "marcus-textstats": {
       "id": "marcus-textstats",
@@ -14,6 +14,22 @@
             "text",
             "utility"
           ],
+          "contribution": "terminal",
+          "min_marcus_version": "1.0.0"
+        }
+      },
+      "latest_version": "0.1.0",
+      "deprecated": false
+    },
+    "marcus-img2ascii": {
+      "id": "marcus-img2ascii",
+      "versions": {
+        "0.1.0": {
+          "published_at": "2026-07-05",
+          "download_url": "https://github.com/Moribund233/Marcus-plugins/releases/download/marcus-img2ascii@v0.1.0/marcus-img2ascii.marcus-plugin",
+          "display_name": "marcus-img2ascii",
+          "description": "",
+          "categories": [],
           "contribution": "terminal",
           "min_marcus_version": "1.0.0"
         }
