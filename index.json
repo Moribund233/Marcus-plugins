@@ -1,6 +1,6 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-05T15:31:55Z",
+  "updated_at": "2026-07-05T15:32:03Z",
   "plugins": {
     "marcus-textstats": {
       "id": "marcus-textstats",
@@ -27,9 +27,12 @@
         "0.1.0": {
           "published_at": "2026-07-05",
           "download_url": "https://github.com/Moribund233/Marcus-plugins/releases/download/marcus-img2ascii@v0.1.0/marcus-img2ascii.marcus-plugin",
-          "display_name": "marcus-img2ascii",
-          "description": "",
-          "categories": [],
+          "display_name": "图片转ASCII",
+          "description": "将图片转换为 ASCII 字符图，支持自定义输出宽度",
+          "categories": [
+            "image",
+            "utility"
+          ],
           "contribution": "terminal",
           "min_marcus_version": "1.0.0"
         }
