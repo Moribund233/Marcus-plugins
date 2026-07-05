@@ -16,16 +16,32 @@ jobs:
         env:
           GH_TOKEN: ${{ github.token }}
         run: |
-          cat << 'SCRIPT' > build_index.py
-          import json, os, re, sys
+          python << 'PYEOF'
+          import json, os, re, urllib.request, zipfile, io
 
-          OWNER = os.environ["GITHUB_REPOSITORY"].split("/")[0]
-          REPO = os.environ["GITHUB_REPOSITORY"].split("/")[1]
+          repo = os.environ["GITHUB_REPOSITORY"]
+          token = os.environ["GH_TOKEN"]
+          headers = {
+              "Authorization": f"Bearer {token}",
+              "Accept": "application/vnd.github+json",
+              "User-Agent": "marcus-sync"
+          }
 
-          # Fetch all releases via GitHub API
-          releases = json.loads(os.popen(
-              f"gh release list --repo $GITHUB_REPOSITORY --limit 1000 --json tagName,createdAt,name,body"
-          ).read())
+          def api(path):
+              url = f"https://api.github.com/repos/{repo}/{path}"
+              req = urllib.request.Request(url, headers=headers)
+              with urllib.request.urlopen(req) as resp:
+                  return json.loads(resp.read())
+
+          def release_asset_url(release, filename):
+              for asset in release.get("assets", []):
+                  if asset["name"] == filename:
+                      return asset["url"], asset.get("browser_download_url", "")
+              return None, None
+
+          # Fetch all releases
+          releases = api("releases?per_page=100")
+          TAG_PATTERN = re.compile(r'^(.+)@v?(\d+\.\d+\.\d+.*)$')
 
           index = {
               "schema_version": 1,
@@ -33,10 +49,8 @@ jobs:
               "plugins": {}
           }
 
-          TAG_PATTERN = re.compile(r'^(.+)@v?(\d+\.\d+\.\d+.*)$')
-
           for rel in releases:
-              match = TAG_PATTERN.match(rel["tagName"])
+              match = TAG_PATTERN.match(rel["tag_name"])
               if not match:
                   continue
 
@@ -53,32 +67,27 @@ jobs:
 
               pkg = index["plugins"][plugin_id]
 
-              # Try to fetch manifest from release asset
+              # Extract manifest from the plugin zip asset
               manifest = {}
-              try:
-                  asset_info = os.popen(
-                      f"gh release view {rel['tagName']} --repo $GITHUB_REPOSITORY --json assets"
-                  ).read()
-                  assets = json.loads(asset_info).get("assets", [])
-                  for asset in assets:
-                      if asset["name"].endswith(".marcus-plugin"):
-                          # Download and extract manifest
-                          os.system(f"gh release download {rel['tagName']} --repo $GITHUB_REPOSITORY --pattern '{asset['name']}'")
-                          os.system(f"unzip -p {asset['name']} marcus-plugin.json > _manifest.json 2>/dev/null")
-                          if os.path.exists("_manifest.json"):
-                              with open("_manifest.json") as f:
-                                  manifest = json.load(f)
-                              os.remove("_manifest.json")
-                          os.remove(asset["name"])
-                          break
-              except:
-                  pass
+              for asset in rel.get("assets", []):
+                  if asset["name"].endswith(".marcus-plugin"):
+                      dl_url = asset["url"]
+                      req = urllib.request.Request(dl_url, headers={**headers, "Accept": "application/octet-stream"})
+                      try:
+                          with urllib.request.urlopen(req) as resp:
+                              zip_data = io.BytesIO(resp.read())
+                              with zipfile.ZipFile(zip_data) as zf:
+                                  if "marcus-plugin.json" in zf.namelist():
+                                      manifest = json.loads(zf.read("marcus-plugin.json"))
+                      except:
+                          pass
+                      break
 
               pkg["versions"][version] = {
-                  "published_at": rel["createdAt"][:10],
+                  "published_at": rel["created_at"][:10],
                   "download_url": (
-                      f"https://github.com/{OWNER}/{REPO}/releases/download/"
-                      f"{rel['tagName']}/{plugin_id}.marcus-plugin"
+                      f"https://github.com/{repo}/releases/download/"
+                      f"{rel['tag_name']}/{plugin_id}.marcus-plugin"
                   ),
                   "display_name": manifest.get("display_name", plugin_id),
                   "description": manifest.get("description", ""),
@@ -87,36 +96,31 @@ jobs:
                   "min_marcus_version": manifest.get("min_marcus_version", "1.0.0")
               }
 
-              # Check for deprecation markers in release body
+              # Deprecation markers
               body = rel.get("body", "") or ""
               if "最终版本" in body or "[deprecated]" in body:
                   pkg["deprecated"] = True
                   pkg["deprecation_message"] = body[:200]
 
-              # Update latest_version (semver compare)
+              # Update latest version
               if version > pkg["latest_version"]:
                   pkg["latest_version"] = version
                   if not pkg.get("deprecated"):
                       pkg["deprecated"] = False
 
-          # Sort versions within each plugin
+          # Sort versions (newest first)
           for pid in index["plugins"]:
-              versions = index["plugins"][pid]["versions"]
-              index["plugins"][pid]["versions"] = dict(
-                  sorted(versions.items(), reverse=True)
-              )
+              vs = index["plugins"][pid]["versions"]
+              index["plugins"][pid]["versions"] = dict(sorted(vs.items(), reverse=True))
 
-          index["updated_at"] = os.popen("date -u +%Y-%m-%dT%H:%M:%SZ").read().strip()
+          index["updated_at"] = __import__("datetime").datetime.utcnow().strftime("%Y-%m-%dT%H:%M:%SZ")
 
           with open("index.json", "w") as f:
               json.dump(index, f, indent=2, ensure_ascii=False)
               f.write("\n")
 
           print(f"Index updated: {len(index['plugins'])} plugins")
-          SCRIPT
-
-          pip install -q PyGithub 2>/dev/null || true
-          python build_index.py
+          PYEOF
 
       - name: Commit and push
         run: |
