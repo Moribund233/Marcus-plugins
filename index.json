@@ -1,5 +1,25 @@
 {
   "schema_version": 1,
-  "updated_at": "2026-07-05T00:00:00Z",
-  "plugins": {}
+  "updated_at": "2026-07-05T08:43:08Z",
+  "plugins": {
+    "marcus-textstats": {
+      "id": "marcus-textstats",
+      "versions": {
+        "0.1.0": {
+          "published_at": "2026-07-05",
+          "download_url": "https://github.com/Moribund233/Marcus-plugins/releases/download/marcus-textstats@v0.1.0/marcus-textstats.marcus-plugin",
+          "display_name": "文本统计器",
+          "description": "统计文本文件的行数、词数、字符数",
+          "categories": [
+            "text",
+            "utility"
+          ],
+          "contribution": "terminal",
+          "min_marcus_version": "1.0.0"
+        }
+      },
+      "latest_version": "0.1.0",
+      "deprecated": false
+    }
+  }
 }
